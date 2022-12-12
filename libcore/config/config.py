@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
+import configparser
 import getpass
 import os
 import platform
@@ -9,18 +10,25 @@ from libcore.exception.not_support_system_type_exception import NotSupportSystem
 from libcore.exception.config_key_not_exists_exception import ConfigKeyNotExistsException
 from libcore.exception.get_system_info_exception import GetSystemInfoException
 
+
 class Config:
     """
     配置
     """
 
-    __mirror = None
-    __lang = "en_US"
-    __publisher = "Oracle"
+    __default_mirror = None
+    __default_lang = "en_US"
+    __default_publisher = "Oracle"
 
-    __config_file_windows = "{systemRoot}\\Users\\{username}\\AppData\\Local\\jjvm\\config\\.jjvm-config.ini"
-    __config_file_osx = "/Users/{username}/.jjvm/Config/.jjvm-config.ini"
-    __config_file_linux = "/home/{username}/.jjvm/config/.jjvm-config.ini"
+    __config = None
+
+    __config_file_windows_tpl = "{systemRoot}\\Users\\{username}\\AppData\\Local\\jjvm\\config\\.jjvm-config.ini"
+    __config_file_osx_tpl = "/Users/{username}/.jjvm/Config/.jjvm-config.ini"
+    __config_file_linux_tpl = "/home/{username}/.jjvm/config/.jjvm-config.ini"
+
+    __config_file_windows = None
+    __config_file_osx = None
+    __config_file_linux = None
 
     __curr_system_type = None
     __curr_username = None
@@ -58,18 +66,19 @@ class Config:
         else:
             raise NotSupportSystemTypeException("Unsupported OS type.")
 
-    def __init_config_file(self):
+    def __init_config_file_location(self):
         """
         初始化配置文件位置
         :return:
         """
         if self.__curr_system_type == "OSX":
-            self.__config_file_osx.format(username=self.__curr_username)
+            self.__config_file_osx = self.__config_file_osx_tpl.format(username=self.__curr_username)
         elif self.__curr_system_type == "Windows":
-            self.__config_file_windows.format(systemRoot=self.__curr_windows_system_root,
-                                              username=self.__curr_username)
+            self.__config_file_windows = self.__config_file_windows_tpl.format(
+                systemRoot=self.__curr_windows_system_root,
+                username=self.__curr_username)
         elif self.__curr_system_type == "Linux":
-            self.__config_file_linux(username=self.__curr_username)
+            self.__config_file_linux = self.__config_file_linux_tpl(username=self.__curr_username)
         else:
             pass
 
@@ -81,11 +90,23 @@ class Config:
         如果文件存在,加载,修改
         :return:
         """
-        pass
+        # TODO 通过操作系统路径加载配置文件 .jjvm-config.ini
+
+        filename = ""
+        if os.path.exists(filename):
+            self.__config = configparser.ConfigParser()
+            self.__config.read(filename, encoding="utf-8")
+
+            sections = self.__config.sections()
+
+            if "app" not in sections:
+                pass
+
+
 
     def __init__(self):
         self.__init_system_info()
-        self.__init_config_file()
+        self.__init_config_file_location()
         self.load_config_file()
 
     def get(self, key: str) -> str:
