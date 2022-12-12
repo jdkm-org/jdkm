@@ -30,6 +30,7 @@ class Config:
     __config_file_windows = None
     __config_file_osx = None
     __config_file_linux = None
+    __curr_config_file = None
 
     __curr_system_type = None
     __curr_username = None
@@ -74,14 +75,15 @@ class Config:
         """
         if self.__curr_system_type == "OSX":
             self.__config_file_osx = self.__config_file_osx_tpl.format(username=self.__curr_username)
+            self.__curr_config_file = self.__config_file_osx
         elif self.__curr_system_type == "Windows":
             self.__config_file_windows = self.__config_file_windows_tpl.format(
                 systemRoot=self.__curr_windows_system_root,
                 username=self.__curr_username)
+            self.__curr_config_file = self.__config_file_windows
         elif self.__curr_system_type == "Linux":
             self.__config_file_linux = self.__config_file_linux_tpl(username=self.__curr_username)
-        else:
-            pass
+            self.__curr_config_file = self.__config_file_linux
 
     def load_config_file(self):
         """
@@ -91,9 +93,8 @@ class Config:
         如果文件存在,加载,修改
         :return:
         """
-        # TODO 通过操作系统路径加载配置文件 .jjvm-config.ini
-
-        filename = ""
+        # 通过操作系统路径加载配置文件 .jjvm-config.ini
+        filename = self.__curr_config_file
         if os.path.exists(filename):
             self.__config = configparser.ConfigParser()
             self.__config.read(filename, encoding="utf-8")
