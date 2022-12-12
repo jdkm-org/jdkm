@@ -5,6 +5,7 @@ import getpass
 import os
 import platform
 
+from libcore.exception.config_file_parse_failed_exception import ConfigFileParseFailedException
 from libcore.util.string_util import StringUtil
 from libcore.exception.not_support_system_type_exception import NotSupportSystemTypeException
 from libcore.exception.config_key_not_exists_exception import ConfigKeyNotExistsException
@@ -100,9 +101,7 @@ class Config:
             sections = self.__config.sections()
 
             if "app" not in sections:
-                pass
-
-
+                raise ConfigFileParseFailedException(f"Configuration file parsing exception: {filename}")
 
     def __init__(self):
         self.__init_system_info()
@@ -119,12 +118,24 @@ class Config:
         if StringUtil.is_empty(key):
             raise ConfigKeyNotExistsException("{} is not in config file,because key is empty".format(key))
 
+        key = key.strip()
+
         if key not in self.__allow_config_keys:
             raise ConfigKeyNotExistsException("{} is not in config file,the specified key is invalid".format(key))
 
-        ## TODO 读取配置文件
+        if self.__config is None:
+            return self.__match_config_key(key)
+        else:
+            val = self.__config.get("app", key).strip()
+            return self.__match_config_key(key) if StringUtil.is_empty(val) else val
 
-        return ""
+    def __match_config_key(self, key: str) -> str:
+        if key == "mirror":
+            return self.__default_mirror
+        elif key == "lang":
+            return self.__default_lang
+        elif key == "publisher":
+            return self.__default_publisher
 
     def set(self, key: str, value: str) -> bool:
         """
@@ -137,9 +148,9 @@ class Config:
 
     def get_with_default(self, key: str, default: str):
         """
-        获取配置项,如果这个配置项的值为空,那么返回 default
+        获取配置项,如果这个配置项的值为空,返回用户设置的default
         :param key: Key
-        :param default: 默认值
+        :param default: 用户指定的默认值
         :return: Value
         """
         pass
