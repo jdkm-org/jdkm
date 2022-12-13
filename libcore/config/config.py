@@ -110,6 +110,7 @@ class Config:
     def get(self, key: str) -> str:
         """
         获取配置项
+        配置获取优先级: 当前环境变量 > 配置文件 > 默认值
         :param key: Key
         :return: Value
         """
@@ -122,7 +123,7 @@ class Config:
         if key not in self.__allow_config_keys:
             raise ConfigKeyNotExistsException("{} is not in config file,the specified key is invalid".format(key))
 
-        if self.__config is None:
+        if self.__config is None:   # 当不存在配置文件ini, 则返回默认的配置项
             return self.__match_config_key(key)
         else:
             val = self.__config.get(self.__config_file_sections_app, key).strip()
@@ -146,22 +147,21 @@ class Config:
         if StringUtil.is_empty(key):
             raise ConfigKeyNotExistsException("{} is not in config file,because key is empty".format(key))
 
-        if StringUtil.is_empty(value):
-            raise ConfigValueNotExistsException("The value of the configuration {} is empty".format(key))
-
         key = key.strip()
 
         if key not in self.__allow_config_keys:
             raise ConfigKeyNotExistsException("{} is not in config file,the specified key is invalid".format(key))
 
-        self.__config.set(self.__config_file_sections_app, key, value)
-        self.__config.write(open(self.__curr_config_file), "w")
+        if StringUtil.is_empty(value):
+            raise ConfigValueNotExistsException("The value of the configuration {} is empty".format(key))
 
-        return True
+        self.__config.set(self.__config_file_sections_app, key, value)
+        return self.__config.write(open(self.__curr_config_file), "w")
 
     def get_with_default(self, key: str, default: str):
         """
         获取配置项,如果这个配置项的值为空,返回用户设置的default
+        配置获取优先级: 当前环境变量 > 配置文件 > 用户指定的默认值 > 默认值
         :param key: Key
         :param default: 用户指定的默认值
         :return: Value

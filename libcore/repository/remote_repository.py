@@ -12,8 +12,8 @@ class RemoteRepository:
             raise NotSupportRepositoryIndexerException("Local Repository indexer is null.")
         self.__indexer = indexer
 
-    def file_by_app(self, app: App) -> str:
-        pass
+    def get_file_by_app(self, app: App):
+        return app.get_file()
 
 
 if __name__ == '__main__':
