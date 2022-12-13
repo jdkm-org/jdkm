@@ -76,16 +76,13 @@ class Config:
         :return:
         """
         if self.__curr_system_type == "OSX":
-            self.__config_file_osx = self.__config_file_osx_tpl.format(username=self.__curr_username)
-            self.__curr_config_file = self.__config_file_osx
+            self.__curr_config_file = self.__config_file_osx_tpl.format(username=self.__curr_username)
         elif self.__curr_system_type == "Windows":
-            self.__config_file_windows = self.__config_file_windows_tpl.format(
+            self.__curr_config_file = self.__config_file_windows_tpl.format(
                 systemRoot=self.__curr_windows_system_root,
                 username=self.__curr_username)
-            self.__curr_config_file = self.__config_file_windows
         elif self.__curr_system_type == "Linux":
-            self.__config_file_linux = self.__config_file_linux_tpl(username=self.__curr_username)
-            self.__curr_config_file = self.__config_file_linux
+            self.__curr_config_file = self.__config_file_linux_tpl(username=self.__curr_username)
 
     def load_config_file(self):
         """
@@ -96,15 +93,14 @@ class Config:
         :return:
         """
         # 通过操作系统路径加载配置文件 .jjvm-config.ini
-        filename = self.__curr_config_file
-        if os.path.exists(filename):
+        if os.path.exists(self.__curr_config_file):
             self.__config = configparser.ConfigParser()
-            self.__config.read(filename, encoding="utf-8")
+            self.__config.read(self.__curr_config_file, encoding="utf-8")
 
             sections = self.__config.sections()
 
             if self.__config_file_sections_app not in sections:
-                raise ConfigFileParseFailedException(f"Configuration file parsing exception: {filename}")
+                raise ConfigFileParseFailedException(f"Configuration file parsing exception: {self.__curr_config_file}")
 
     def __init__(self):
         self.__init_system_info()
@@ -170,7 +166,19 @@ class Config:
         :param default: 用户指定的默认值
         :return: Value
         """
-        pass
+        if StringUtil.is_empty(key):
+            raise ConfigKeyNotExistsException("{} is not in config file,because key is empty".format(key))
+
+        key = key.strip()
+
+        if key not in self.__allow_config_keys:
+            raise ConfigKeyNotExistsException("{} is not in config file,the specified key is invalid".format(key))
+
+        if self.__config is None:
+            return self.__match_config_key(key)
+        else:
+            val = self.__config.get(self.__config_file_sections_app, key).strip()
+            return default if StringUtil.is_empty(val) else val
 
 
 if __name__ == '__main__':
