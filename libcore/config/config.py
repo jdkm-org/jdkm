@@ -16,7 +16,6 @@ class Config:
     """
     配置
     """
-
     __default_mirror = None
     __default_lang = "en_US"
     __default_publisher = "Oracle"
