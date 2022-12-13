@@ -15,9 +15,8 @@ echo 'Prepare to install jjvmm repository server...'
 sudo mkdir -p /usr/local/src/jdkm
 sudo cd /usr/local/src/jdkm
 
-# shellcheck disable=SC1068
-temp = $(curl -fsSL https://raw.githubusercontent.com/jdkm-org/jdkm/main/repository-server-template/Dockerfile)
-sudo echo $temp  &> Dockerfile
+sudo curl -o Dockerfile https://raw.githubusercontent.com/jdkm-org/jdkm/main/repository-server-template/Dockerfile
+sudo curl -o docker-run-tpl.sh https://raw.githubusercontent.com/jdkm-org/jdkm/main/repository-server-template/docker-run-tpl.sh
 
-sudo docker build -f ./DockerFile -t  jdkm-repository-server-template:1.0.0 .
+sudo docker build -f ./Dockerfile -t jdkm-repository-server-template:1.0.0 .
 sudo docker run -id -p 9900:80 --name "jdkm-repository-server" jdkm-repository-server-template:1.0.0

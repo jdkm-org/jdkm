@@ -6,6 +6,7 @@ import os
 import platform
 
 from libcore.exception.config_file_parse_failed_exception import ConfigFileParseFailedException
+from libcore.exception.config_value_not_exists_exception import ConfigValueNotExistsException
 from libcore.util.string_util import StringUtil
 from libcore.exception.not_support_system_type_exception import NotSupportSystemTypeException
 from libcore.exception.config_key_not_exists_exception import ConfigKeyNotExistsException
@@ -25,6 +26,8 @@ class Config:
     __config_file_windows_tpl = "{systemRoot}\\Users\\{username}\\AppData\\Local\\jjvm\\config\\.jjvm-config.ini"
     __config_file_osx_tpl = "/Users/{username}/.jjvm/Config/.jjvm-config.ini"
     __config_file_linux_tpl = "/home/{username}/.jjvm/config/.jjvm-config.ini"
+
+    __config_file_sections_app = "app"
 
     __config_file_windows = None
     __config_file_osx = None
@@ -100,7 +103,7 @@ class Config:
 
             sections = self.__config.sections()
 
-            if "app" not in sections:
+            if self.__config_file_sections_app not in sections:
                 raise ConfigFileParseFailedException(f"Configuration file parsing exception: {filename}")
 
     def __init__(self):
@@ -126,7 +129,7 @@ class Config:
         if self.__config is None:
             return self.__match_config_key(key)
         else:
-            val = self.__config.get("app", key).strip()
+            val = self.__config.get(self.__config_file_sections_app, key).strip()
             return self.__match_config_key(key) if StringUtil.is_empty(val) else val
 
     def __match_config_key(self, key: str) -> str:
@@ -144,7 +147,21 @@ class Config:
         :param value: Value
         :return: 如果不存在这个配置项,那么返回 False
         """
-        pass
+        if StringUtil.is_empty(key):
+            raise ConfigKeyNotExistsException("{} is not in config file,because key is empty".format(key))
+
+        if StringUtil.is_empty(value):
+            raise ConfigValueNotExistsException("The value of the configuration {} is empty".format(key))
+
+        key = key.strip()
+
+        if key not in self.__allow_config_keys:
+            raise ConfigKeyNotExistsException("{} is not in config file,the specified key is invalid".format(key))
+
+        self.__config.set(self.__config_file_sections_app, key, value)
+        self.__config.write(open(self.__curr_config_file), "w")
+
+        return True
 
     def get_with_default(self, key: str, default: str):
         """
