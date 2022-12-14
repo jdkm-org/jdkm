@@ -4,6 +4,7 @@ import configparser
 import getpass
 import os
 import platform
+import shutil
 
 from libcore.exception.config_file_parse_failed_exception import ConfigFileParseFailedException
 from libcore.exception.config_value_not_exists_exception import ConfigValueNotExistsException
@@ -23,9 +24,9 @@ class Config:
 
     __config = None
 
-    __config_file_windows_tpl = "{systemRoot}\\Users\\{username}\\AppData\\Local\\jjvm\\config\\.jjvm-config.ini"
-    __config_file_osx_tpl = "/Users/{username}/.jjvm/Config/.jjvm-config.ini"
-    __config_file_linux_tpl = "/home/{username}/.jjvm/config/.jjvm-config.ini"
+    __config_file_windows_tpl = "{systemRoot}\\Users\\{username}\\AppData\\Local\\jjvmm\\config\\.jjvm-config.ini"
+    __config_file_osx_tpl = "/Users/{username}/.jjvmm/Config/.jjvm-config.ini"
+    __config_file_linux_tpl = "/home/{username}/.jjvmm/config/.jjvm-config.ini"
 
     __config_file_sections_app = "app"
 
@@ -93,6 +94,12 @@ class Config:
         :return:
         """
         # 通过操作系统路径加载配置文件 .jjvm-config.ini
+        if not os.path.exists(self.__curr_config_file):
+            # 默认的配置文件不存在, 则创建默认的配置文件
+            if not os.path.exists(self.__curr_config_file.replace(".jjvm-config.ini", '')):
+                os.makedirs(self.__curr_config_file.replace(".jjvm-config.ini", ''))
+            shutil.copyfile('../../assets/.jjvm-config.ini.template', self.__curr_config_file)
+
         if os.path.exists(self.__curr_config_file):
             self.__config = configparser.ConfigParser()
             self.__config.read(self.__curr_config_file, encoding="utf-8")
@@ -115,6 +122,33 @@ class Config:
         :return: Value
         """
 
+        # TODO 配置获取优先级: 当前环境变量 > 配置文件 > 默认值
+
+        if StringUtil.is_empty(key):
+            raise ConfigKeyNotExistsException("{} is not in config file,because key is empty".format(key))
+
+        key = key.strip()
+
+        # TODO __allow_config_keys 元组中的 key 要和 __match_config_key() 中的key保持同步
+        if key not in self.__allow_config_keys:
+            raise ConfigKeyNotExistsException("{} is not in config file,the specified key is invalid".format(key))
+
+        if self.__config is None:  # 当不存在配置文件ini, 则返回默认的配置项
+            return self.__match_config_key(key)
+        else:
+            val = self.__config.get(self.__config_file_sections_app, key).strip()
+            return self.__match_config_key(key) if StringUtil.is_empty(val) else val
+
+    # TODO 合并 get() 、 get_with_default() 、 set() 重复代码
+
+    def get_with_default(self, key: str, default: str) -> str:
+        """
+        获取配置项,如果这个配置项的值为空,返回用户设置的default
+        配置获取优先级: 当前环境变量 > 配置文件 > 用户指定的默认值 > 默认值
+        :param key: Key
+        :param default: 用户指定的默认值
+        :return: Value
+        """
         if StringUtil.is_empty(key):
             raise ConfigKeyNotExistsException("{} is not in config file,because key is empty".format(key))
 
@@ -123,11 +157,11 @@ class Config:
         if key not in self.__allow_config_keys:
             raise ConfigKeyNotExistsException("{} is not in config file,the specified key is invalid".format(key))
 
-        if self.__config is None:   # 当不存在配置文件ini, 则返回默认的配置项
+        if self.__config is None:
             return self.__match_config_key(key)
         else:
             val = self.__config.get(self.__config_file_sections_app, key).strip()
-            return self.__match_config_key(key) if StringUtil.is_empty(val) else val
+            return default if StringUtil.is_empty(val) else val
 
     def __match_config_key(self, key: str) -> str:
         if key == "mirror":
@@ -156,30 +190,10 @@ class Config:
             raise ConfigValueNotExistsException("The value of the configuration {} is empty".format(key))
 
         self.__config.set(self.__config_file_sections_app, key, value)
-        return self.__config.write(open(self.__curr_config_file), "w")
-
-    def get_with_default(self, key: str, default: str):
-        """
-        获取配置项,如果这个配置项的值为空,返回用户设置的default
-        配置获取优先级: 当前环境变量 > 配置文件 > 用户指定的默认值 > 默认值
-        :param key: Key
-        :param default: 用户指定的默认值
-        :return: Value
-        """
-        if StringUtil.is_empty(key):
-            raise ConfigKeyNotExistsException("{} is not in config file,because key is empty".format(key))
-
-        key = key.strip()
-
-        if key not in self.__allow_config_keys:
-            raise ConfigKeyNotExistsException("{} is not in config file,the specified key is invalid".format(key))
-
-        if self.__config is None:
-            return self.__match_config_key(key)
-        else:
-            val = self.__config.get(self.__config_file_sections_app, key).strip()
-            return default if StringUtil.is_empty(val) else val
+        self.__config.write(open(self.__curr_config_file), "w")
+        # TODO 校验是否写入成功
+        return True
 
 
 if __name__ == '__main__':
-    pass
+    config = Config()

@@ -1,4 +1,4 @@
 [app]
 publisher = Oracle
-mirror =
+mirror = http://192.168.3.14/
 lang = English
