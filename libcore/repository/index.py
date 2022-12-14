@@ -69,65 +69,80 @@ class App:
 
 class Index:
     """
-    用于访问 GitHub 存储库或者镜像源的 index.json 文件。
+    1. 用于访问 GitHub 存储库或者镜像源的 index.json 文件。
     """
 
-    __index_json = "/index.json"
-    __mirror_url = ""
+    __suffix_url = "/index.json"    # url 后缀
+    __mirror = ""   # 镜像url
+    __index_url = ""    # 镜像默认主页url
+    __version_url_tpl = "/apps/{publisher}/index.json"  # 版本模板 url
+    __apps_url_tpl = "/apps/{publisher}/versions/{version}.json"
+    __apps: list[App] = None
 
     def __init__(self, config: Config = None):
         # TODO 根据环境变量和配置文件读取镜像源地址
         try:
-            mirror = config.get("mirror")
+            self.__mirror = config.get("mirror")
             # 处理兼容 http://mirrors.xlab.io 和 http://mirrors.xlab.io/
-            if mirror[-1] == '/':
-                mirror = mirror[:-1]
-            self.__mirror_url = mirror + self.__index_json
+            if self.__mirror[-1] == '/':
+                self.__mirror = self.__mirror[:-1]
+            self.__index_url = self.__mirror + self.__suffix_url
         except ConfigKeyNotExistsException as e:
             raise IndexerInitFailedException("Can not read mirror from config file, because: {}".format(e))
 
-    def get_file_response_json(self) -> str | None | dict:
-        response = requests.get(self.__mirror_url)
+    def __init_apps(self, app: App):
+        # TODO 处理
+        publisher = app.get_publisher()
+        version = app.get_version()
+
+    def get_file_response_json(self, url) -> str | None | dict:
+        """
+        返回指定url对应页面的内容
+        """
+        response = requests.get(url)
         if response.status_code != 200:
             return None
-
         return response.json()
 
-    def get_version(self) -> str | None:
-
-        json_response = self.get_file_response_json()
-
-        index_version = json_response["version"]
-
-        if StringUtil.is_empty(index_version):
+    def get_file_response_str(self, name: str, url: str) -> str | None:
+        json_response = self.get_file_response_json(url)
+        result = json_response[name]
+        if StringUtil.is_empty(str(result)):
             return None
+        return result.strip()
 
-        return index_version.strip()
+    def get_version(self) -> str | None:
+        return self.get_file_response_str("version", self.__index_url)
 
     def get_name(self) -> str:
-        json_response = self.get_file_response_json()
-        name = json_response["name"]
-        if StringUtil.is_empty(name):
-            return None
+        return self.get_file_response_str("name", self.__index_url)
 
-        return name.strip()
+    def get_apps(self) -> dict:
+        json_response = self.get_file_response_json(self.__index_url)
+        return json_response["apps"]
 
-    def get_publisher(self) -> str:
-        pass
+    def get_publisher(self) -> tuple:
+        return tuple(self.get_apps().keys())
 
     def get_update_time(self) -> str:
-        json_response = self.get_file_response_json()
-        update_time = json_response["update_time"]
-        if StringUtil.is_empty(update_time):
-            return None
-        return update_time
+        return self.get_file_response_str("update-time", self.__index_url)
 
     def get_app_versions_by_publisher(self, publisher: str) -> tuple:
-        pass
+        json_response = self.get_file_response_json(self.__mirror + self.__version_url_tpl.format(publisher=publisher))
+        return tuple(json_response.keys())
 
     def get_app(self, publisher: str, version: str) -> tuple:
-        pass
+        json_response = self.get_file_response_json(
+            self.__mirror + self.__apps_url_tpl.format(publisher=publisher, version=version))
+        return tuple(json_response)
 
 
 if __name__ == '__main__':
-    pass
+    config = Config()
+    index = Index(config)
+    print(f"get_version: {index.get_version()}")
+    print(f"get_name: {index.get_name()}")
+    print(f"get_publisher: {index.get_publisher()}")
+    print(f"get_update_time: {index.get_update_time()}")
+    print("get_app_versions_by_publisher: {}".format(index.get_app_versions_by_publisher("oracle")))
+    print("get_app: {}".format(index.get_app("oracle", "17.0.5")))
