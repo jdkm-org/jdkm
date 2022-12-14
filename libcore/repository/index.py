@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 import json
 import requests
+
+from libcore.cache.cache import Cache
 from libcore.config.config import Config
 from libcore.exception.config_key_not_exists_exception import ConfigKeyNotExistsException
 from libcore.exception.indexer_init_failed_exception import IndexerInitFailedException
@@ -72,12 +74,13 @@ class Index:
     1. 用于访问 GitHub 存储库或者镜像源的 index.json 文件。
     """
 
-    __suffix_url = "/index.json"    # url 后缀
-    __mirror = ""   # 镜像url
-    __index_url = ""    # 镜像默认主页url
+    __suffix_url = "/index.json"  # url 后缀
+    __mirror = ""  # 镜像url
+    __index_url = ""  # 镜像默认主页url
     __version_url_tpl = "/apps/{publisher}/index.json"  # 版本模板 url
     __apps_url_tpl = "/apps/{publisher}/versions/{version}.json"
     __apps: list[App] = None
+    cache = None
 
     def __init__(self, config: Config = None):
         # TODO 根据环境变量和配置文件读取镜像源地址
@@ -87,6 +90,7 @@ class Index:
             if self.__mirror[-1] == '/':
                 self.__mirror = self.__mirror[:-1]
             self.__index_url = self.__mirror + self.__suffix_url
+            self.cache = Cache()
         except ConfigKeyNotExistsException as e:
             raise IndexerInitFailedException("Can not read mirror from config file, because: {}".format(e))
 

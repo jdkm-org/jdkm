@@ -11,6 +11,8 @@ from libcore.cache.cache import Cache
 
 def jjvm():
     app_config = Config()
+    cache = Cache()
+    print(cache.curr_config_file)
 
     try:
         app_indexer = Index(config=app_config)
