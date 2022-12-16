@@ -21,27 +21,30 @@ class LocalRepository:
         """
         FileID: Publisher---Version---OS---Arch---Dist
         """
-        file_id = Cache.get_file_by_app(self.__file_id_tpl.format(
+        path = Cache.get_file_by_app(self.__file_id_tpl.format(
             publisher=_app.get_publisher(),
             version=_app.get_version(),
             os=_app.get_os(),
             arch=_app.get_arch(),
             dist=_app.get_dist()
-        ))
+        ), app.get_path_cache())
 
-        if StringUtil.is_empty(file_id):
-            return ""
+        if StringUtil.is_empty(path):
+            return None
 
-        return file_id
+        return path
 
 
 if __name__ == '__main__':
+    cache = Cache()
+
     app = App()
     app.set_publisher("oracle")
     app.set_version("17.0.5")
     app.set_os("Windows")
     app.set_arch("x64")
     app.set_dist("zip")
+    app.set_path_cache(cache.get_curr_config_file())
 
     index = Index(Config())
     localRepository = LocalRepository(index)

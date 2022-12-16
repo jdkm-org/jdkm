@@ -17,6 +17,7 @@ Just do Java Virtual Machine Management.
 ## Configuration
 
 - Temp Mirror: ``export JJVM_MIRROR="<You Mirror Server URL>"``
+  - Example： ``export JJVM_MIRROR="http://192.168.3.14/"``
 
 # LICENES
 

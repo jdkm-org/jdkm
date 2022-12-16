@@ -18,7 +18,7 @@ class Config:
     """
     配置
     """
-    __default_mirror = None
+    __default_mirror = "http://192.168.3.14/"
     __default_lang = "en_US"
     __default_publisher = "Oracle"
 
@@ -94,11 +94,19 @@ class Config:
         :return:
         """
         # 通过操作系统路径加载配置文件 .jjvm-config.ini
+        # 默认的配置文件不存在, 则创建默认的配置文件
         if not os.path.exists(self.__curr_config_file):
-            # 默认的配置文件不存在, 则创建默认的配置文件
+            # 目录不存在则创建目录
             if not os.path.exists(self.__curr_config_file.replace(".jjvm-config.ini", '')):
                 os.makedirs(self.__curr_config_file.replace(".jjvm-config.ini", ''))
-            shutil.copyfile('../../assets/.jjvm-config.ini.template', self.__curr_config_file)
+            jjvm_config_ini = configparser.ConfigParser()
+            jjvm_config_ini['app'] = {
+                'publisher': self.__default_publisher,
+                'mirror': self.__default_mirror,
+                'lang': self.__default_lang
+            }
+            with open(self.__curr_config_file, 'w') as cfg:
+                jjvm_config_ini.write(cfg)
 
         if os.path.exists(self.__curr_config_file):
             self.__config = configparser.ConfigParser()
@@ -113,6 +121,12 @@ class Config:
         self.__init_system_info()
         self.__init_config_file_location()
         self.load_config_file()
+
+    def get_curr_system_type(self) -> str:
+        """
+        获取当前操作系统架构
+        """
+        return self.__curr_system_type
 
     def get(self, key: str) -> str:
         """
@@ -197,3 +211,15 @@ class Config:
 
 if __name__ == '__main__':
     config = Config()
+
+    env_dist = os.environ
+    os.environ['JDKM_MIRROR'] = "http://192.168.3.14/"
+
+    print(env_dist.get('PATH'))
+    print(env_dist.get('JDKM_MIRROR'))
+
+    if env_dist.get('JAVA_HOME'):
+        print("java")
+
+    if env_dist.get('JDKM_MIRROR'):
+        print("jjvm")

@@ -19,6 +19,7 @@ class App:
     __checksum_algo = None
     __checksum_content = None
     __file = None
+    __path_cache = None
 
     def set_publisher(self, publisher: str):
         self.__publisher = publisher
@@ -67,6 +68,12 @@ class App:
 
     def get_file(self) -> str:
         return self.__file
+
+    def set_path_cache(self, path: str):
+        self.__path_cache = path
+
+    def get_path_cache(self) -> str:
+        return self.__path_cache
 
 
 class Index:
@@ -136,17 +143,34 @@ class Index:
         return tuple(json_response.keys())
 
     def get_app(self, publisher: str, version: str) -> tuple:
+        # TODO 待删除
         json_response = self.get_file_response_json(
             self.__mirror + self.__apps_url_tpl.format(publisher=publisher, version=version))
         return tuple(json_response)
+
+    # 和上面是重复的，暂时没有合并
+    def get_app_multi(self, publisher: str, version: str) -> tuple:
+        json_response = self.get_file_response_json(
+            self.__mirror + self.__apps_url_tpl.format(publisher=publisher, version=version))
+        return tuple(json_response)
+
+    def get_app_single(self, publisher: str, version: str, os: str, arch: str, dist: str, ) -> dict | None:
+        json_response = self.get_file_response_json(
+            self.__mirror + self.__apps_url_tpl.format(publisher=publisher, version=version))
+        for item in tuple(json_response):
+            if item["os"] == os and item["arch"] == arch and item["dist"] == dist:
+                return item
+        return None
 
 
 if __name__ == '__main__':
     config = Config()
     index = Index(config)
     print(f"get_version: {index.get_version()}")
+    print(f"get_apps: {index.get_apps()}")
     print(f"get_name: {index.get_name()}")
     print(f"get_publisher: {index.get_publisher()}")
     print(f"get_update_time: {index.get_update_time()}")
     print("get_app_versions_by_publisher: {}".format(index.get_app_versions_by_publisher("oracle")))
     print("get_app: {}".format(index.get_app("oracle", "17.0.5")))
+    print("get_app_single: {}".format(index.get_app_single("oracle", "17.0.5", "Windows", "x64", "zip")))
